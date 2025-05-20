@@ -11,24 +11,23 @@ import {
   ToggleButtonGroup,
   Alert,
 } from '@mui/material';
-import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickData } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts';
 import axios from 'axios';
 import * as tf from '@tensorflow/tfjs';
 import { RSI, SMA } from 'technicalindicators';
 
 interface CryptocurrencyData {
   id: string;
-  name: string;
   symbol: string;
-  market_data: {
-    current_price: {
-      usd: number;
-    };
-    price_change_percentage_24h: number;
-    market_cap: {
-      usd: number;
-    };
-  };
+  name: string;
+  image: string;
+  current_price: number;
+  market_cap: number;
+  market_cap_rank: number;
+  price_change_percentage_24h: number;
+  total_volume: number;
+  high_24h: number;
+  low_24h: number;
 }
 
 interface ChartData {
@@ -79,14 +78,14 @@ const CryptocurrencyDetail: React.FC = () => {
           candlestickSeriesRef.current.setData(response.data);
         }
         if (volumeSeriesRef.current) {
-          volumeSeriesRef.current.setData(response.data.map((d: CandlestickData) => ({
-            time: d.time,
+          volumeSeriesRef.current.setData(response.data.map((d: ChartData) => ({
+            time: d.time as Time,
             value: d.volume
           })));
         }
 
         // Calculate technical indicators
-        const closes = response.data.map((d: CandlestickData) => d.close);
+        const closes = response.data.map((d: ChartData) => d.close);
         const rsi = RSI.calculate({
           values: closes,
           period: 14
@@ -197,13 +196,11 @@ const CryptocurrencyDetail: React.FC = () => {
           type: 'volume',
         },
         priceScaleId: '',
-        priceScale: {
-          scaleMargins: {
-            top: 0.8,
-            bottom: 0,
-          },
+        scaleMargins: {
+          top: 0.8,
+          bottom: 0,
         },
-      });
+      } as any);
 
       candlestickSeriesRef.current = candlestickSeries;
       volumeSeriesRef.current = volumeSeries;
@@ -265,12 +262,12 @@ const CryptocurrencyDetail: React.FC = () => {
               </Typography>
             </Box>
             <Typography variant="h5" color="primary" gutterBottom>
-              ${cryptoData.market_data.current_price.usd.toLocaleString()}
+              ${cryptoData.current_price.toLocaleString()}
             </Typography>
             <Typography
-              color={cryptoData.market_data.price_change_percentage_24h >= 0 ? 'success.main' : 'error.main'}
+              color={cryptoData.price_change_percentage_24h >= 0 ? 'success.main' : 'error.main'}
             >
-              24h Change: {cryptoData.market_data.price_change_percentage_24h.toFixed(2)}%
+              24h Change: {cryptoData.price_change_percentage_24h.toFixed(2)}%
             </Typography>
             {prediction && (
               <Typography variant="h6" color="info.main" sx={{ mt: 2 }}>
@@ -305,7 +302,7 @@ const CryptocurrencyDetail: React.FC = () => {
               Market Statistics
             </Typography>
             <Typography>
-              Market Cap: ${cryptoData.market_data.market_cap.usd.toLocaleString()}
+              Market Cap: ${cryptoData.market_cap.toLocaleString()}
             </Typography>
           </Paper>
         </Grid>
